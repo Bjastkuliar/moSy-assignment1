@@ -32,7 +32,8 @@ if(yesOrNo === "yes") {
 const answers:string[] = readFileSync('answers.txt', 'utf-8').split("\n")
 const words: string[] = readFileSync('allwords.txt', 'utf-8').split("\n")
 
-const command: string = ''
+let hardMode: boolean = false
+let message : string
 
 //Step 1: User chooses answer (not known) --> random?
 //Step 2: Setup game
@@ -47,17 +48,50 @@ readInput()
 
 //reads input and filters if there 
 function readInput (){
+  console.clear()
+  if(typeof message !== "undefined"){
+    console.log(message+'\n')
+  }
   console.log('Welcome! To choose an answer ')
   console.log('or type QUIT to quit.')
   const i = input(`enter a number between 0 and ${answers.length} : `)
   if(isNaN(i)){
-    if(i === "QUIT"){
-      console.clear()
-    } else {
-      console.clear()
-      console.log('What you entered is not a number!')
-      console.log('Please try again!\n')
-      readInput()
+    switch(i){
+        case "QUIT":{
+          console.clear()
+          break
+        }
+      case "EASY": {
+        if(hardMode){
+          message = 'Hard mode disabled.'
+          hardMode = false
+        } else {
+          message = 'Hard mode is already disabled!'
+        }
+        readInput()
+        break
+      }
+      case "HARD": {
+        if(!hardMode){
+          message = 'Hard mode enabled.'
+          hardMode = true
+        } else {
+          message = 'Hard mode is already enabled!'
+        }
+        readInput()
+        break
+      }
+      case "HELP": {
+        break
+      }
+      case "STAT": {
+        break
+      }
+        default:{
+          message = 'What you entered is not a number!\nPlease try again!'
+          readInput()
+          break
+        }  
     }
   } else {
     const n = parseInt(i)
@@ -69,12 +103,11 @@ function readInput (){
     } else {
       console.log(`The word at index ${n} is ${words[n]}`)
       console.log(`The answer word at index ${n} is ${answers[n]}`)
+      input("\npress enter to restart")
+      readInput()
     }  
   }
 }
-
-// this is how to clear the console
-console.clear()
 
 // feel free to delete all the starter you don't need after you understand how to use it.  
 // after this the program quits

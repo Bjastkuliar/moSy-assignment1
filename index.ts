@@ -32,6 +32,8 @@ if(yesOrNo === "yes") {
 const answers:string[] = readFileSync('answers.txt', 'utf-8').split("\n")
 const words: string[] = readFileSync('allwords.txt', 'utf-8').split("\n")
 
+const command: string = ''
+
 //Step 1: User chooses answer (not known) --> random?
 //Step 2: Setup game
 //Step 3: Play
@@ -40,23 +42,38 @@ const words: string[] = readFileSync('allwords.txt', 'utf-8').split("\n")
 
 // this is how to read an integer, if needed
 // but be careful about incorrect inputs 
-console.log('Welcome! To choose an answer ')
-const i = input(`enter a number between 0 and ${answers.length} :  `)
-if(isNaN(i)){
-  console.log('What you entered is not a number!')
-} else {
-  const n = parseInt(i)
-  if(i<0 || i> answers.length){
-    console.log('The number is out of the valid range!')
+
+readInput()
+
+//reads input and filters if there 
+function readInput (){
+  console.log('Welcome! To choose an answer ')
+  console.log('or type QUIT to quit.')
+  const i = input(`enter a number between 0 and ${answers.length} : `)
+  if(isNaN(i)){
+    if(i === "QUIT"){
+      console.clear()
+    } else {
+      console.clear()
+      console.log('What you entered is not a number!')
+      console.log('Please try again!\n')
+      readInput()
+    }
   } else {
-    console.log(`The word at index ${n} is ${words[n]}`)
-    console.log(`The answer word at index ${n} is ${answers[n]}`)
-  }  
+    const n = parseInt(i)
+    if(i<0 || i> answers.length){
+      console.clear()
+      console.log('The number is out of the valid range!')
+      console.log('Please try again!\n')
+      readInput()
+    } else {
+      console.log(`The word at index ${n} is ${words[n]}`)
+      console.log(`The answer word at index ${n} is ${answers[n]}`)
+    }  
+  }
 }
 
-
 // this is how to clear the console
-input("press enter to clear the console")
 console.clear()
 
 // feel free to delete all the starter you don't need after you understand how to use it.  

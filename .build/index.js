@@ -29,19 +29,33 @@ const BgWhite = "[47m";
 const input = (0, import_prompt_sync.default)();
 const answers = (0, import_fs.readFileSync)("answers.txt", "utf-8").split("\n");
 const words = (0, import_fs.readFileSync)("allwords.txt", "utf-8").split("\n");
-console.log("Welcome! To choose an answer ");
-const i = input(`enter a number between 0 and ${answers.length} :  `);
-if (isNaN(i)) {
-  console.log("What you entered is not a number!");
-} else {
-  const n = parseInt(i);
-  if (i < 0 || i > answers.length) {
-    console.log("The number is out of the valid range!");
+const command = "";
+readInput();
+function readInput() {
+  console.log("Welcome! To choose an answer ");
+  console.log("or type QUIT to quit.");
+  const i = input(`enter a number between 0 and ${answers.length} : `);
+  if (isNaN(i)) {
+    if (i === "QUIT") {
+      console.clear();
+    } else {
+      console.clear();
+      console.log("What you entered is not a number!");
+      console.log("Please try again!\n");
+      readInput();
+    }
   } else {
-    console.log(`The word at index ${n} is ${words[n]}`);
-    console.log(`The answer word at index ${n} is ${answers[n]}`);
+    const n = parseInt(i);
+    if (i < 0 || i > answers.length) {
+      console.clear();
+      console.log("The number is out of the valid range!");
+      console.log("Please try again!");
+      readInput();
+    } else {
+      console.log(`The word at index ${n} is ${words[n]}`);
+      console.log(`The answer word at index ${n} is ${answers[n]}`);
+    }
   }
 }
-input("press enter to clear the console");
 console.clear();
 //# sourceMappingURL=index.js.map

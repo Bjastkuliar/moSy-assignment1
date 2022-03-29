@@ -39,7 +39,7 @@ let inGame = false;
 let round = 0;
 let wins = 0;
 let losses = 0;
-let game = new Array();
+let game = new Array(6);
 menu();
 function menu() {
   while (keepPlaying) {
@@ -134,7 +134,7 @@ function processNumber(input2) {
 function processWord(input2) {
   if (inGame) {
     if (words.includes(input2)) {
-      fillGrid(input2);
+      fillGame(input2);
     } else {
       message = "Word does not figure among those valid!";
     }
@@ -150,42 +150,46 @@ function newGame() {
   endGame(win);
 }
 function endGame(result) {
+  message = "Game has ended!";
   if (result) {
+    message += "\nYou Won!";
     wins++;
   } else {
+    message += "\nYou Lost!";
     losses++;
   }
+  showMessage();
+  showGrid();
+  input("Press enter to continue");
   inGame = false;
   round = 0;
   game = new Array();
+  message = void 0;
   menu();
 }
 function playRound() {
   let word;
   switch (round) {
     case 0: {
-      round++;
-      message = "Game has started!";
+      message = "New game has started!";
       showMessage();
-      printStats();
+      showGrid();
       word = input("Enter the first guess ");
       processString(word);
       break;
     }
     case 5: {
-      round++;
       message = "Last round!";
       showMessage();
-      printStats();
+      showGrid();
       word = input("Enter your last guess ");
       processString(word);
       break;
     }
     default: {
-      round++;
       message = "Round " + round;
       showMessage();
-      printStats();
+      showGrid();
       word = input("Enter the next guess ");
       processString(word);
       break;
@@ -195,16 +199,20 @@ function playRound() {
     playRound();
   }
 }
-function fillGrid(word) {
+function fillGame(word) {
   const wordArray = Array.from(word);
-  printStats();
-  game[round - 1] = wordArray;
+  game[round] = wordArray;
   console.log(game);
+  round++;
 }
-function emptyGrid(grid) {
+function showGrid() {
   let view = rowSeparator + "\n";
-  for (let index = 0; index < grid.length; index++) {
-    view = view + rowEmpty + "\n" + rowSeparator + "\n";
+  for (let index = 0; index < game.length; index++) {
+    if (typeof game[index] !== "undefined") {
+      view = view + convertRow(game[index]);
+    } else {
+      view = view + rowEmpty + "\n" + rowSeparator + "\n";
+    }
   }
   console.log(view);
 }
@@ -220,7 +228,7 @@ function convertRow(gameRow) {
   }
 }
 function printStats() {
-  console.log("inGame " + inGame + "\nkeepPlaying " + keepPlaying + "\nround " + round + "\ngame " + game);
+  console.log("inGame " + inGame + "\nkeepPlaying " + keepPlaying + "\nround " + round + "\ngame " + game + "\ngame length " + game.length);
 }
 function printGrid() {
   let view = rowSeparator + "\n";

@@ -21,15 +21,15 @@ const words: string[] = readFileSync('allwords.txt', 'utf-8').split("\n")
 
 const rowSeparator: string = '|---|---|---|---|---|'
 const rowEmpty: string = '|   |   |   |   |   |'
-let message : string
-let answer: string
+let message : string|undefined
+let answer: string[]
 let hardMode: boolean = false
 let keepPlaying: boolean = true
 let inGame: boolean = false
 let round: number = 0
 let wins: number = 0
 let losses: number = 0
-let game: string[][] = new Array()
+let game: string[][] = new Array(6)
 
 //Step 1: User chooses answer (not known) --> random?
 //Step 2: Setup game
@@ -144,7 +144,7 @@ function processNumber(input: string) {
   if(isNaN(i)){
     message = 'Invalid input, please try again!'
   } else {
-    answer = answers[i]
+    answer = Array.from(answers[i])
     newGame()
   }
 }
@@ -153,11 +153,11 @@ function processNumber(input: string) {
 game has started and it is valid, otherwise sends a warning.*/
 function processWord(input: string) {
   if(inGame){
-    if(words.includes(input)){
-      fillGrid(input)
-    } else {
-      message = 'Word does not figure among those valid!'
-    }
+      if(words.includes(input)){
+        fillGame(input)
+      } else {
+        message = 'Word does not figure among those valid!'
+      }
   } else {
     message = 'Game has not started yet!\nEnter a number to start a game.'
   }
@@ -168,21 +168,28 @@ function newGame(){
   inGame = true
   round = 0
   let win: boolean = false 
-  playRound()
+  playRound()//let win = playRound()
   endGame(win)
 }
 
 /*Performs the closing operations of a game,
 namely update statistics and reset the variables*/
 function endGame(result: boolean) {
+  message = 'Game has ended!'
   if(result){
+    message+='\nYou Won!'
     wins++
   } else {
+    message+='\nYou Lost!'
     losses++
   }  
+  showMessage()
+  showGrid()
+  input('Press enter to continue')
   inGame = false
   round = 0
   game = new Array()
+  message = undefined
   menu()
 }
 
@@ -191,28 +198,25 @@ function playRound() {
   let word: string 
   switch(round){
     case 0:{
-      round++
-      message = 'Game has started!'
+      message = 'New game has started!'
       showMessage()
-      printStats()
+      showGrid()
       word = input('Enter the first guess ')
       processString(word)
       break
     }
     case 5:{
-      round++
       message = 'Last round!'
       showMessage()
-      printStats()
+      showGrid()
       word = input('Enter your last guess ')
       processString(word)
       break
     }
     default:{
-      round++
       message = 'Round '+round
       showMessage()
-      printStats()
+      showGrid()
       word = input('Enter the next guess ')
       processString(word)
       break
@@ -227,17 +231,22 @@ function playRound() {
   //validate input
 }
 
-function fillGrid(word: string) {
+function fillGame(word: string) {
   const wordArray: string[] = Array.from(word)
-  printStats()
-  game[round-1]= wordArray
+  //printStats()
+  game[round]= wordArray
   console.log(game)
+  round++
 }
 
-function emptyGrid(grid: string[][]) {
+function showGrid() {
   let view: string = rowSeparator+'\n'
-  for (let index = 0; index < grid.length; index++) {
-    view = view + rowEmpty+'\n' + rowSeparator+'\n'
+  for (let index = 0; index < game.length; index++) {
+    if(typeof game[index] !== 'undefined'){
+      view = view + convertRow(game[index])
+    } else {
+      view = view + rowEmpty+'\n'+rowSeparator+'\n'
+    }
   }
   console.log(view)
 }
@@ -257,13 +266,20 @@ function convertRow(gameRow : string[]): string {
 }
 
 function printStats() {
-  console.log('inGame '+inGame+'\nkeepPlaying '+keepPlaying+'\nround '+round+'\ngame '+game)
+  console.log('inGame '+inGame+'\nkeepPlaying '+keepPlaying+'\nround '+round+'\ngame '+game+
+             '\ngame length '+game.length)
 }
 
+/*Converts the two-dimensional game array to
+a formatted string table*/
 function printGrid() {
   let view: string = rowSeparator+'\n'
   for (let index = 0; index < 6; index++) {
     view = view + convertRow(game[index])
   }
   console.log(view)
+}
+
+function printKeyboard() {
+  let keyRowSep = '|---|---|---|---|---|---|---|---|---|'
 }

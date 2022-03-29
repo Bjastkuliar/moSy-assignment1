@@ -21,6 +21,11 @@ const words: string[] = readFileSync('allwords.txt', 'utf-8').split("\n")
 
 const rowSeparator: string = '|---|---|---|---|---|'
 const rowEmpty: string = '|   |   |   |   |   |'
+const keyboardSeparator = '|---|---|---|---|---|---|---|---|---|---|'
+const keyboard = [['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Z','X','C','V','B','N','M']]
+let keyboardColour = [...keyboard]
+
+
 let message : string|undefined
 let answer: string[]
 let hardMode: boolean = false
@@ -201,6 +206,7 @@ function playRound() {
       message = 'New game has started!'
       showMessage()
       showGrid()
+      showKeyboard()
       word = input('Enter the first guess ')
       processString(word)
       break
@@ -241,9 +247,9 @@ function fillGame(word: string) {
 
 function showGrid() {
   let view: string = rowSeparator+'\n'
-  for (let index = 0; index < game.length; index++) {
-    if(typeof game[index] !== 'undefined'){
-      view = view + convertRow(game[index])
+  for (let idx = 0; idx < game.length; idx++) {
+    if(typeof game[idx] !== 'undefined'){
+      view = view + convertRow(game[idx])
     } else {
       view = view + rowEmpty+'\n'+rowSeparator+'\n'
     }
@@ -256,12 +262,12 @@ printable table format*/
 function convertRow(gameRow : string[]): string {
   if(typeof gameRow !== 'undefined'){
     let gridRow: string = "| "
-  for (let index = 0; index < gameRow.length; index++) {
-    gridRow = gridRow + gameRow[index]+ " | "
+  for (let idx = 0; idx < gameRow.length; idx++) {
+    gridRow = gridRow + gameRow[idx]+ " | "
   }
-    return gridRow + '\n' + rowSeparator + '\n'
+    return gridRow
   } else {
-    return rowEmpty + '\n' + rowSeparator + '\n'
+    return rowEmpty
   }
 }
 
@@ -274,12 +280,30 @@ function printStats() {
 a formatted string table*/
 function printGrid() {
   let view: string = rowSeparator+'\n'
-  for (let index = 0; index < 6; index++) {
-    view = view + convertRow(game[index])
+  for (let idx = 0; idx < 6; idx++) {
+    view = view + convertRow(game[idx])+'\n'+rowSeparator+'\n'
   }
   console.log(view)
 }
 
-function printKeyboard() {
-  let keyRowSep = '|---|---|---|---|---|---|---|---|---|'
+function showKeyboard() {
+  let keyGrid: string = keyboardSeparator+'\n'
+  for(let idx = 0; idx<keyboard.length;idx++){
+    keyGrid+=printKeyboard(idx)
+  }
+  console.log(keyGrid)
+}
+
+function printKeyboard(index:number):string{
+  switch(index){
+    case 0:{
+      return convertRow(keyboardColour[index])+'\n'+ keyboardSeparator+'\n'
+    }
+    case 1:{
+      return convertRow(keyboardColour[index])+'  |'+'\n'+ keyboardSeparator+'\n'
+    }
+    case 2:{
+      return '|   '+ convertRow(keyboardColour[index])+        '  |   |'+'\n'+ keyboardSeparator+'\n'
+    }
+  }
 }

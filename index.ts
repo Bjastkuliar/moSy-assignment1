@@ -193,7 +193,7 @@ function endGame(result: boolean) {
   input('Press enter to continue')
   inGame = false
   round = 0
-  game = new Array()
+  game = new Array(6)
   message = undefined
   menu()
 }
@@ -215,6 +215,7 @@ function playRound() {
       message = 'Last round!'
       showMessage()
       showGrid()
+      showKeyboard()
       word = input('Enter your last guess ')
       processString(word)
       break
@@ -223,6 +224,7 @@ function playRound() {
       message = 'Round '+round
       showMessage()
       showGrid()
+      showKeyboard()
       word = input('Enter the next guess ')
       processString(word)
       break
@@ -249,7 +251,7 @@ function showGrid() {
   let view: string = rowSeparator+'\n'
   for (let idx = 0; idx < game.length; idx++) {
     if(typeof game[idx] !== 'undefined'){
-      view = view + convertRow(game[idx])
+      view = view + convertRow(game[idx])+'\n'+rowSeparator+'\n'
     } else {
       view = view + rowEmpty+'\n'+rowSeparator+'\n'
     }
@@ -262,9 +264,9 @@ printable table format*/
 function convertRow(gameRow : string[]): string {
   if(typeof gameRow !== 'undefined'){
     let gridRow: string = "| "
-  for (let idx = 0; idx < gameRow.length; idx++) {
-    gridRow = gridRow + gameRow[idx]+ " | "
-  }
+    for (let idx = 0; idx < gameRow.length; idx++) {
+      gridRow = gridRow + gameRow[idx]+ " | "
+    }
     return gridRow
   } else {
     return rowEmpty
@@ -294,7 +296,7 @@ function showKeyboard() {
   console.log(keyGrid)
 }
 
-function printKeyboard(index:number):string{
+function printKeyboard(index:number): string{
   switch(index){
     case 0:{
       return convertRow(keyboardColour[index])+'\n'+ keyboardSeparator+'\n'
@@ -305,5 +307,6 @@ function printKeyboard(index:number):string{
     case 2:{
       return '|   '+ convertRow(keyboardColour[index])+        '  |   |'+'\n'+ keyboardSeparator+'\n'
     }
+    default: return 'error'
   }
 }

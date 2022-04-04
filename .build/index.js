@@ -166,7 +166,7 @@ function endGame(result) {
   input("Press enter to continue");
   inGame = false;
   round = 0;
-  game = new Array();
+  game = new Array(6);
   message = void 0;
   menu();
 }
@@ -213,7 +213,7 @@ function showGrid() {
   let view = rowSeparator + "\n";
   for (let idx = 0; idx < game.length; idx++) {
     if (typeof game[idx] !== "undefined") {
-      view = view + convertRow(game[idx]);
+      view = view + convertRow(game[idx]) + "\n" + rowSeparator + "\n";
     } else {
       view = view + rowEmpty + "\n" + rowSeparator + "\n";
     }
@@ -259,6 +259,8 @@ function printKeyboard(index) {
     case 2: {
       return "|   " + convertRow(keyboardColour[index]) + "  |   |\n" + keyboardSeparator + "\n";
     }
+    default:
+      return "error";
   }
 }
 //# sourceMappingURL=index.js.map

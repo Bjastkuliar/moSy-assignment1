@@ -97,15 +97,16 @@ function processString(input: string){
 provided that it is valid. Otherwise returns
 an invalid input message*/
 function processCommand(input: string) {
-  inGame = false
   switch(input){
       case "QUIT":{
+        inGame = false
         keepPlaying = false
         console.clear()
         break
       }
         //both cases either switch the mode or do nothing
       case "EASY": {
+        inGame = false
         if(hardMode){
           message = 'Hard mode disabled.'
           hardMode = false
@@ -115,6 +116,7 @@ function processCommand(input: string) {
         break
       }
       case "HARD": {
+        inGame = false
         if(!hardMode){
           message = 'Hard mode enabled.'
           hardMode = true
@@ -125,11 +127,13 @@ function processCommand(input: string) {
       }
         //prints the command list
       case "HELP": {
+        inGame = false
         message = 'The available commands are:\n'+
           'HELP       shows this list\nEASY/HARD  switches between easy and hard mode'+'\nSTAT       prints the statistics\nQUIT       exits the game'
         break
       }
       case "STAT": {
+        inGame = false
         message = `Current statistics:\n\n${wins}  games won\n${losses}  games lost`
         break
       }

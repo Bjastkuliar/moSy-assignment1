@@ -83,14 +83,15 @@ function processString(input2) {
   }
 }
 function processCommand(input2) {
-  inGame = false;
   switch (input2) {
     case "QUIT": {
+      inGame = false;
       keepPlaying = false;
       console.clear();
       break;
     }
     case "EASY": {
+      inGame = false;
       if (hardMode) {
         message = "Hard mode disabled.";
         hardMode = false;
@@ -100,6 +101,7 @@ function processCommand(input2) {
       break;
     }
     case "HARD": {
+      inGame = false;
       if (!hardMode) {
         message = "Hard mode enabled.";
         hardMode = true;
@@ -109,10 +111,12 @@ function processCommand(input2) {
       break;
     }
     case "HELP": {
+      inGame = false;
       message = "The available commands are:\nHELP       shows this list\nEASY/HARD  switches between easy and hard mode\nSTAT       prints the statistics\nQUIT       exits the game";
       break;
     }
     case "STAT": {
+      inGame = false;
       message = `Current statistics:
 
 ${wins}  games won
@@ -186,6 +190,7 @@ function playRound() {
       message = "Last round!";
       showMessage();
       showGrid();
+      showKeyboard();
       word = input("Enter your last guess ");
       processString(word);
       break;
@@ -194,6 +199,7 @@ function playRound() {
       message = "Round " + round;
       showMessage();
       showGrid();
+      showKeyboard();
       word = input("Enter the next guess ");
       processString(word);
       break;

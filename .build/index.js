@@ -134,7 +134,7 @@ function processNumber(input2) {
   if (isNaN(i)) {
     message = "Invalid input, please try again!";
   } else {
-    answer = Array.from(answers[i]);
+    answer = answers[i];
     newGame();
   }
 }
@@ -152,9 +152,7 @@ function processWord(input2) {
 function newGame() {
   inGame = true;
   round = 0;
-  let win = false;
-  playRound();
-  endGame(win);
+  endGame(playRound());
 }
 function endGame(result) {
   message = "Game has ended!";
@@ -162,11 +160,12 @@ function endGame(result) {
     message += "\nYou Won!";
     wins++;
   } else {
-    message += "\nYou Lost!";
+    message += `
+You Lost! The correct word was ${answer}`;
     losses++;
   }
   showMessage();
-  showGrid();
+  printGrid();
   input("Press enter to continue");
   inGame = false;
   round = 0;
@@ -180,8 +179,8 @@ function playRound() {
     case 0: {
       message = "New game has started!";
       showMessage();
-      showGrid();
-      showKeyboard();
+      printGrid();
+      printKeyboard();
       word = input("Enter the first guess ");
       processString(word);
       break;
@@ -189,8 +188,8 @@ function playRound() {
     case 5: {
       message = "Last round!";
       showMessage();
-      showGrid();
-      showKeyboard();
+      printGrid();
+      printKeyboard();
       word = input("Enter your last guess ");
       processString(word);
       break;
@@ -198,15 +197,19 @@ function playRound() {
     default: {
       message = "Round " + round;
       showMessage();
-      showGrid();
-      showKeyboard();
+      printGrid();
+      printKeyboard();
       word = input("Enter the next guess ");
       processString(word);
       break;
     }
   }
-  if (round < 6 && keepPlaying !== false) {
-    playRound();
+  if (checkAnswer(word)) {
+    return true;
+  } else {
+    if (round < 6 && keepPlaying !== false) {
+      return playRound();
+    }
   }
 }
 function fillGame(word) {
@@ -214,17 +217,6 @@ function fillGame(word) {
   game[round] = wordArray;
   console.log(game);
   round++;
-}
-function showGrid() {
-  let view = rowSeparator + "\n";
-  for (let idx = 0; idx < game.length; idx++) {
-    if (typeof game[idx] !== "undefined") {
-      view = view + convertRow(game[idx]) + "\n" + rowSeparator + "\n";
-    } else {
-      view = view + rowEmpty + "\n" + rowSeparator + "\n";
-    }
-  }
-  console.log(view);
 }
 function convertRow(gameRow) {
   if (typeof gameRow !== "undefined") {
@@ -247,14 +239,14 @@ function printGrid() {
   }
   console.log(view);
 }
-function showKeyboard() {
+function printKeyboard() {
   let keyGrid = keyboardSeparator + "\n";
   for (let idx = 0; idx < keyboard.length; idx++) {
-    keyGrid += printKeyboard(idx);
+    keyGrid += showKeyboard(idx);
   }
   console.log(keyGrid);
 }
-function printKeyboard(index) {
+function showKeyboard(index) {
   switch (index) {
     case 0: {
       return convertRow(keyboardColour[index]) + "\n" + keyboardSeparator + "\n";
@@ -267,6 +259,13 @@ function printKeyboard(index) {
     }
     default:
       return "error";
+  }
+}
+function checkAnswer(input2) {
+  if (input2 === answer) {
+    return true;
+  } else {
+    return false;
   }
 }
 //# sourceMappingURL=index.js.map

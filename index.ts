@@ -153,7 +153,7 @@ function processNumber(input: string) {
   if(isNaN(i)){
     message = 'Invalid input, please try again!'
   } else {
-    answer = Array.from(answers[i])
+    answer = answers[i]
     newGame()
   }
 }
@@ -172,13 +172,12 @@ function processWord(input: string) {
   }
 }
 
-/*starts a new game*/
+/*Performs the game initialization, instantiating or
+reinstantiating the variables*/
 function newGame(){
   inGame = true
   round = 0
-  let win: boolean = false 
-  playRound()//let win = playRound()
-  endGame(win)
+  endGame(playRound())
 }
 
 /*Performs the closing operations of a game,
@@ -189,11 +188,11 @@ function endGame(result: boolean) {
     message+='\nYou Won!'
     wins++
   } else {
-    message+='\nYou Lost!'
+    message+=`\nYou Lost! The correct word was ${answer}`
     losses++
   }  
   showMessage()
-  showGrid()
+  printGrid()
   input('Press enter to continue')
   inGame = false
   round = 0
@@ -203,14 +202,14 @@ function endGame(result: boolean) {
 }
 
 /*runs one round of the game*/
-function playRound() {
+function playRound(): boolean{
   let word: string 
   switch(round){
     case 0:{
       message = 'New game has started!'
       showMessage()
-      showGrid()
-      showKeyboard()
+      printGrid()
+      printKeyboard()
       word = input('Enter the first guess ')
       processString(word)
       break
@@ -218,8 +217,8 @@ function playRound() {
     case 5:{
       message = 'Last round!'
       showMessage()
-      showGrid()
-      showKeyboard()
+      printGrid()
+      printKeyboard()
       word = input('Enter your last guess ')
       processString(word)
       break
@@ -227,40 +226,29 @@ function playRound() {
     default:{
       message = 'Round '+round
       showMessage()
-      showGrid()
-      showKeyboard()
+      printGrid()
+      printKeyboard()
       word = input('Enter the next guess ')
       processString(word)
       break
     }
   }
-  if(round < 6 && keepPlaying !== false){
-    playRound()
+  if(checkAnswer(word)){
+    return true
+  } else {
+    if(round < 6 && keepPlaying !== false){
+      return playRound()
+    }
   }
-  //show table
-  //show keyboard
-  //await input
-  //validate input
 }
 
+/*inserts the word in the game array*/
 function fillGame(word: string) {
   const wordArray: string[] = Array.from(word)
   //printStats()
   game[round]= wordArray
   console.log(game)
   round++
-}
-
-function showGrid() {
-  let view: string = rowSeparator+'\n'
-  for (let idx = 0; idx < game.length; idx++) {
-    if(typeof game[idx] !== 'undefined'){
-      view = view + convertRow(game[idx])+'\n'+rowSeparator+'\n'
-    } else {
-      view = view + rowEmpty+'\n'+rowSeparator+'\n'
-    }
-  }
-  console.log(view)
 }
 
 /*converts any provided array of strings into the
@@ -292,15 +280,19 @@ function printGrid() {
   console.log(view)
 }
 
-function showKeyboard() {
+/*loops over the keyboard array*/
+function printKeyboard() {
   let keyGrid: string = keyboardSeparator+'\n'
   for(let idx = 0; idx<keyboard.length;idx++){
-    keyGrid+=printKeyboard(idx)
+    keyGrid+=showKeyboard(idx)
   }
   console.log(keyGrid)
 }
 
-function printKeyboard(index:number): string{
+/*checks which line is requested by printKeyboard()
+and acts accordingly, calling convertRow() on a
+specific entry of the keyboardCopy array*/
+function showKeyboard(index:number): string{
   switch(index){
     case 0:{
       return convertRow(keyboardColour[index])+'\n'+ keyboardSeparator+'\n'
@@ -314,3 +306,15 @@ function printKeyboard(index:number): string{
     default: return 'error'
   }
 }
+
+/*processes the inserted word*/
+function checkAnswer(input : string):boolean {
+  if(input === answer){
+    return true
+  } else {
+    return false
+  }
+}
+//checks whether it is the correct word
+//if not checks which letters figure in the solution and where, if they are in the correct place colour them green, otherwise yellow
+//update keyboard, if letters enter in the answer paint them green, otherwise red

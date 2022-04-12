@@ -1,70 +1,64 @@
-const rowSeparator: string = '|---|---|---|---|---|'
-const rowEmpty: string = '|   |   |   |   |   |'
-let message : string
-let answer: string
-let hardMode: boolean = false
-let keepPlaying: boolean = true
-let inGame: boolean = false
-let round: number = 0
-let wins: number = 0
-let losses: number = 0
-let game: string[][]
+function setMessage (settings: object, message: string): object{
+  let tmp = {...settings}
+  settings.message = message
+  return Object.freeze(tmp)
+}
 
-//Step 1: User chooses answer (not known) --> random?
-//Step 2: Setup game
-//Step 3: Play
-//Step 4: Win/Loss, add to stats
-
-startGame()
+mainMenu()
 
 /*starts the game by reading input and filtering 
 if there are commands. Needed in order to handle 
 each possible case of the input function*/
-function startGame (){
-  showMessage()
+function mainMenu (settings : object = Object.freeze({...settingsTemplate})){
+  console.log(settings)
+  showMessage(settings.message)
   const i = input(`enter a number between 0 and ${answers.length}: `)
-  processString(i)
-  if(keepPlaying){
-    startGame()
+  processString(i, settings)
+  if(settings.keepPlaying){
+    mainMenu(settings)
   }
 }
 
 /*prints the message according to whether it is the
 startup, the main menu or in-game*/
-function showMessage(){
+function showMessage(message : string, inGame : boolean = false){
   console.clear()
-  if(typeof message !== 'undefined'){
-     console.log(message+'\n')
+  if(message === ''){
+    console.log('Welcome!\n')
+    console.log('Type HELP to list all the commands\nor type QUIT to quit.\nTo choose an answer ')
+  } else {
+    console.log(message+'\n')
     if(!inGame){
       console.log('Type HELP to list all the commands\nor type QUIT to quit.\nTo choose an answer ')
     }
-  } else {
-    console.log('Welcome!\n')
-    console.log('Type HELP to list all the commands\nor type QUIT to quit.\nTo choose an answer ')
   }
 }
 
 /*Processes the input, by sorting it between words, commands or numbers. If it does not fall within these categories it is treated as invalid input*/
-function processString(input: string){
+function processString(input: string, settings: object, game: object|undefined){
   switch(input.length){
       //should be a grid input
     case 5:{
-      processWord(input)
+      if(game!=='undefined'){
+        processWord(input, settings, game)
+      } else {
+          settings = setMessage(settings,'Game has not started yet!\nEnter a number to start a game.')
+      }
       break
     }
       //should be a command
     case 4:{
-      processCommand(input)
+      processCommand(input, settings)
       break
     }
       //should be a number
     case 1:{
-      processNumber(input)
+      processNumber(input, settings)
       break
     }
       //the rest is invalid
     default:{
-      message = 'Invalid input, please try again!'
+      settings = setMessage(settings,'Invalid input please try again!')
       break
     }
   }
@@ -72,16 +66,12 @@ function processString(input: string){
 
 /*inserts the word in the game-grid if the
 game has started and it is valid, otherwise sends a warning.*/
-function processWord(input: string) {
-  if(inGame){
-    if(words.includes(input)){
+function processWord(input: string, settings: object, game : object) {
+  if(words.includes(input)){
       fillGrid(input)
     } else {
-      message = 'Word does not figure among those valid!'
+      settings = setMessage(settings,'Word does not figure among those valid!')
     }
-  } else {
-    message = 'Game has not started yet!\nEnter a number to start a game.'
-  }
 }
 
 /*process any given word in instructions,

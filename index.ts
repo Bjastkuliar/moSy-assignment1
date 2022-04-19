@@ -224,8 +224,7 @@ function newGame(settings: Settings, game: Game): Settings {
       settings = setLoss(settings)
     }
   }
-  
-  game = {}
+
   return settings
 }
 
@@ -255,11 +254,7 @@ function playGame(game : Game): boolean|undefined{
     input()
     //validate the word
     game = nextRound(game)
-    if(game.win){
-      return true
-    } else {
-      return false
-    }
+    return !!game.win;
   }
   return undefined
 }
@@ -275,8 +270,7 @@ function processWord(input: string, game: Game) {
 }
 
 function fillGrid(word: string) {
-  const wordArray: string[] = Array.from(word)
-  game[round-1]= wordArray
+  game[round-1]= Array.from(word)
   printGrid()
 }
 
@@ -311,7 +305,7 @@ function printGrid(grid: string[][]) {
 
 
 function printKeyboard(game: Game, keyboard: string[][]|undefined = undefined):Game{
-  let uK: string [][] = new Array(3)
+  let uK: string [][]
   if(typeof keyboard === 'undefined'){
     let tmp = keys.split('P')
     tmp[0]+='P'
@@ -329,8 +323,6 @@ function printKeyboard(game: Game, keyboard: string[][]|undefined = undefined):G
 }
 
 function exists(array: any[]):boolean{
-  if(typeof array != "undefined" && array != null && array.length != null && array.length > 0){
-    return true
-  }
-  return false
+  return typeof array != "undefined" && array != null && array.length != null && array.length > 0;
+
 }

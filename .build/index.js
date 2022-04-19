@@ -44,25 +44,16 @@ const input = (0, import_prompt_sync.default)();
 const answers = (0, import_fs.readFileSync)("answers.txt", "utf-8").split("\n");
 const words = (0, import_fs.readFileSync)("allwords.txt", "utf-8").split("\n");
 const rowSeparator = "|---|---|---|---|---|";
+const keySeparator = "|---|---|---|---|---|---|---|---|---|---|";
 const rowEmpty = "|   |   |   |   |   |";
 const keys = "QWERTYUIOPASDFGHJKLZXCVBNM";
-const settingsTemplate = Object.freeze({
-  msg: "Welcome",
-  keepPlaying: true,
-  wins: 0,
-  losses: 0,
-  hardMode: false
-});
-const gameTemplate = Object.freeze({
-  msg: "",
-  grid: [],
-  keyboard: [],
-  answer: "",
-  round: 0,
-  win: false
-});
 mainMenu();
 function setMessage(settings, message) {
+  let tmp = __spreadValues({}, settings);
+  tmp.msg = message;
+  return Object.freeze(tmp);
+}
+function setGameMessage(settings, message) {
   let tmp = __spreadValues({}, settings);
   tmp.msg = message;
   return Object.freeze(tmp);
@@ -77,7 +68,12 @@ function playMore(settings, answer) {
   tmp.keepPlaying = answer;
   return Object.freeze(tmp);
 }
-function mainMenu(settings = Object.freeze(__spreadValues({}, settingsTemplate))) {
+function mainMenu(settings = {
+  msg: "Welcome",
+  keepPlaying: true,
+  wins: 0,
+  losses: 0
+}) {
   while (settings.keepPlaying) {
     showMessage(settings.msg);
     const i = input(`enter a number between 0 and ${answers.length}: `);
@@ -93,21 +89,21 @@ function showMessage(message, inGame = false) {
 function processString(word, data) {
   switch (word.length) {
     case 5: {
-      if (Object.hasOwn(data, "answer")) {
+      if (data.hasOwnProperty("answer")) {
         return data;
       } else {
         return setMessage(data, "Game has not started yet!\nEnter a number to start a game.");
       }
     }
     case 4: {
-      if (Object.hasOwn(data, "answer")) {
+      if (data.hasOwnProperty("answer")) {
         return data;
       } else {
         return processCommand(word, data);
       }
     }
     case 1: {
-      if (Object.hasOwn(data, "answer")) {
+      if (data.hasOwnProperty("answer")) {
         return data;
       } else {
         return processNumber(word, data);
@@ -118,7 +114,7 @@ function processString(word, data) {
     }
   }
 }
-function processCommand(input2, settings, game2) {
+function processCommand(input2, settings) {
   console.clear();
   switch (input2) {
     case "QUIT": {
@@ -160,24 +156,31 @@ function processNumber(word, settings) {
   if (isNaN(i)) {
     return setMessage(settings, "Invalid input, please try again!");
   } else {
-    let game2 = __spreadValues({}, gameTemplate);
-    game2 = setAnswer(game2, answers[i]);
+    let game2 = {
+      answer: answers[i],
+      inGame: true,
+      win: false,
+      round: 0
+    };
     return newGame(settings, game2);
   }
 }
-function setAnswer(game2, answer) {
-  let tmp = __spreadValues({}, game2);
-  tmp.answer = answer;
-  return Object.freeze(tmp);
-}
 function setWin(settings) {
   let tmp = __spreadValues({}, settings);
-  tmp.wins++;
+  if (typeof tmp.wins === "undefined") {
+    tmp.wins = 1;
+  } else {
+    tmp.wins++;
+  }
   return Object.freeze(tmp);
 }
 function setLoss(settings) {
   let tmp = __spreadValues({}, settings);
-  tmp.losses++;
+  if (typeof tmp.losses === "undefined") {
+    tmp.losses = 1;
+  } else {
+    tmp.losses++;
+  }
   return Object.freeze(tmp);
 }
 function newGame(settings, game2) {
@@ -191,7 +194,7 @@ function newGame(settings, game2) {
       settings = setLoss(settings);
     }
   }
-  game2 = void 0;
+  game2 = {};
   return settings;
 }
 function nextRound(game2) {
@@ -227,7 +230,7 @@ function playGame(game2) {
 function processWord(input2, game2) {
   if (words.includes(input2)) {
   } else {
-    return setMessage(game2, "Word does not figure among those valid!");
+    return setGameMessage(game2, "Word does not figure among those valid!");
   }
 }
 function fillGrid(word) {
@@ -235,35 +238,49 @@ function fillGrid(word) {
   game[round - 1] = wordArray;
   printGrid();
 }
-function convertRow(gameRow) {
+function convertRow(gameRow, separator) {
   if (typeof gameRow !== "undefined") {
     let gridRow = "| ";
-    for (let index = 0; index < gameRow.length; index++) {
-      gridRow = gridRow + gameRow[index] + " | ";
-    }
-    return gridRow + "\n" + rowSeparator + "\n";
+    gameRow.map((element) => gridRow += element + " | ");
+    return gridRow + "\n" + separator + "\n";
   } else {
-    return rowEmpty + "\n" + rowSeparator + "\n";
+    return rowEmpty + "\n" + separator + "\n";
   }
 }
 function printGrid(grid) {
-  let view = rowSeparator + "\n";
-  for (let index = 0; index < 6; index++) {
-    view = view + convertRow(grid[index]);
+  let view = "";
+  if (typeof grid === "undefined") {
+    grid = new Array(6).fill(void 0);
+  }
+  if (grid.length === 3) {
+    view += keySeparator + "\n";
+    grid.map((row) => view += convertRow(row, keySeparator));
+  } else {
+    view += rowSeparator + "\n";
+    grid.map((row) => view += convertRow(row, rowSeparator));
   }
   console.log(view);
 }
-function printKeyboard(game2, keyboard) {
+function printKeyboard(game2, keyboard = void 0) {
   let uK = new Array(3);
-  if (typeof keyboard !== "object") {
+  if (typeof keyboard === "undefined") {
     let tmp = keys.split("P");
     tmp[0] += "P";
     tmp = tmp.concat(tmp[1].split("L"));
     tmp.splice(1, 1);
-    tmp[1] += "L";
+    tmp[1] += "L ";
+    tmp[2] = " " + tmp[2] + "  ";
     uK = tmp.map((row) => row.split(""));
-    console.log(uK);
+  } else {
+    uK = __spreadValues({}, keyboard);
   }
+  printGrid(uK);
   return updateKeyboard(game2, uK);
+}
+function exists(array) {
+  if (typeof array != "undefined" && array != null && array.length != null && array.length > 0) {
+    return true;
+  }
+  return false;
 }
 //# sourceMappingURL=index.js.map

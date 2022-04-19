@@ -4,14 +4,10 @@ import {readFileSync} from 'fs'
 
 // these are some codes to get the console to print in colors
 // see examples below
-const rs = "\x1b[0m"
-const re = "\x1b[41m"
-const gr = "\x1b[42m"
-const ye = "\x1b[43m"
-const bl = "\x1b[44m"
-const ma = "\x1b[45m"
-const cy = "\x1b[46m"
-const wh = "\x1b[47m"
+const reset = "\x1b[0m"
+const red = "\x1b[41m"
+const green = "\x1b[42m"
+const yellow = "\x1b[43m"
 
 const input = prompt();
 
@@ -37,10 +33,11 @@ interface Game{
   msg?: string,
   grid?: string[][],
   keyboard?: string[][],
-  answer?: string,
-  round?: number,
-  win?: boolean,
-  inGame?: boolean
+  answer: string,
+  round: number,
+  win: boolean,
+  inGame: boolean
+  checked?: string[]
   }
 
 mainMenu()
@@ -102,8 +99,7 @@ function processString(word: string, data: Settings|Game):Settings|Game{
     case 5:{
       //distinguish between game and settings
       if(data.hasOwnProperty('answer')){
-        //we are in a game
-        return data as Game
+        return validateWord(word, data as Game)
       } else {
         return setMessage(data as Settings,'Game has not started yet!\nEnter a number to start a game.')
       }
@@ -113,7 +109,9 @@ function processString(word: string, data: Settings|Game):Settings|Game{
       if(data.hasOwnProperty('answer')){
         //we are in a game
         //quit the game and reopen the main menu
-        return data as Game
+        if((data as Game).inGame){
+           return exitGame(data as Game) as Game
+         }
       } else {
         return processCommand(word,data as Settings)
       }
@@ -121,9 +119,11 @@ function processString(word: string, data: Settings|Game):Settings|Game{
     case 1:{
       //it's a number
        if(data.hasOwnProperty('answer')){
+         if((data as Game).inGame ){
+           return exitGame(data as Game)
+         }
         //we are in a game
         //quit the game and reopen main menu
-        return data
       } else {
         return processNumber(word,data as Settings)
       }
@@ -133,6 +133,7 @@ function processString(word: string, data: Settings|Game):Settings|Game{
     }
   }
 }
+
 
 /*process any given word in instructions,
 provided that it is valid. Otherwise returns
@@ -213,18 +214,32 @@ function setLoss(settings: Settings): Settings{
   return Object.freeze(tmp)
 }
 
+function exitGame(game: Game):Game {
+  let tmp: Game = {...game}
+  tmp.inGame = false
+  return Object.freeze(tmp)
+}
+
 function newGame(settings: Settings, game: Game): Settings {
+  game = updateGrid(game,new Array(6).fill(undefined))
   const outcome: boolean|undefined = playGame(game)
   if(typeof outcome !== 'undefined'){
     if(outcome){
-    settings = setMessage(settings, 'You Won!')
-    settings = setWin(settings)
+      game = setGameMessage(game, 'You Won!')
+      settings = setMessage(settings, 'You Won!')
+      settings = setWin(settings)
     } else {
       settings = setMessage(settings, `You Lost! The answer was ${game.answer}`)
       settings = setLoss(settings)
+      game = setGameMessage(game,`You Lost! The answer was ${game.answer}`)
     }
+  } else {
+    game = setGameMessage(game,'Game exited!')
+    settings = setMessage(settings, `Game exited!`)
   }
-
+  showMessage(game.msg)
+  printGrid(game.grid)
+  input('Press enter to get back to main menu')
   return settings
 }
 
@@ -247,31 +262,44 @@ function updateKeyboard(game: Game, keyboard: string[][]):Game{
 }
 
 function playGame(game : Game): boolean|undefined{
-  while(game.round<6){
-    showMessage(game.msg as string)
-    printGrid(game.grid as string[][])
-    game = printKeyboard(game)
-    input()
-    //validate the word
-    game = nextRound(game)
-    return !!game.win;
+  showMessage(game.msg as string)
+  printGrid(game.grid as string[][])
+  game = printKeyboard(game)
+  console.log(`Round number: ${game.round}`)
+  game = (processString(input('Enter your guess: '), game)) as Game
+  console.log('playGame: '+game.keyboard)
+  game = nextRound(game)
+
+  if(game.win){ //game is won
+    return true
+  } else { //game is still not beaten
+    if(game.round<6){ //we still have rounds left
+      if(game.inGame){ //we are still playing
+        return playGame(game) //proceed with the next round
+      } else { //we are no longer playing
+        return undefined //user has inputted a number/command, exit the game
+      }
+    } else { //there are no rounds left
+      return false //game is lost
+    }
   }
-  return undefined
 }
 
 /*inserts the word in the game-grid if the
 game has started and it is valid, otherwise sends a warning.*/
-function processWord(input: string, game: Game) {
-  if(words.includes(input)){
-      //fillGrid(input)
-    } else {
-      return setGameMessage(game,'Word does not figure among those valid!')
-    }
+function validateWord(word: string, game: Game): Game{
+  if(words.includes(word)){
+    game = fillGrid(game, word)
+    return paintWord(word, game)
+  } else {
+    return setGameMessage(game,`${word} does not figure among valid words!`)
+  }
 }
 
-function fillGrid(word: string) {
-  game[round-1]= Array.from(word)
-  printGrid()
+function fillGrid(game: Game, word: string): Game{
+  let tmp = {...game}
+  tmp.grid[tmp.round] = Array.from(word)
+  return Object.freeze(tmp)
 }
 
 /*converts any provided array of strings into the
@@ -288,41 +316,96 @@ function convertRow(gameRow : string[], separator: string): string {
 
 function printGrid(grid: string[][]) {
   let view: string = ''
-  if(typeof grid === 'undefined'){
-    grid = new Array(6).fill(undefined)
-  }
-  if(grid.length === 3){
+  if(grid.length === 3){ //is the keyboard
     view+=keySeparator+'\n'
     grid.map(row=> view+=convertRow(row, keySeparator))
-  } else {
+  } else { //is the grid
     view+=rowSeparator+'\n'
     grid.map(row=> view+=convertRow(row, rowSeparator))
   }
-  
   console.log(view)
 }
 
-
-
-function printKeyboard(game: Game, keyboard: string[][]|undefined = undefined):Game{
+function printKeyboard(game: Game):Game{
   let uK: string [][]
-  if(typeof keyboard === 'undefined'){
+  if(typeof game.keyboard === 'undefined'){
     let tmp = keys.split('P')
     tmp[0]+='P'
     tmp = tmp.concat(tmp[1].split('L'))
     tmp.splice(1,1)
     tmp[1]+='L '
     tmp[2]=' '+tmp[2]+'  '
-    
     uK = tmp.map(row => row.split(''))
   } else {
-    uK = {...keyboard}
+    uK = [...game.keyboard]
   }
   printGrid(uK)
   return updateKeyboard(game, uK)
 }
 
-function exists(array: any[]):boolean{
-  return typeof array != "undefined" && array != null && array.length != null && array.length > 0;
+function paintWord(word: string, game: Game): Game{
+  if(word === game.answer){
+    return win(game)
+  } else {
+    for(let idx = 0; idx<word.length; idx++){
+      let char = word.charAt(idx)
+      if(char===game.answer.charAt(idx)){ //key is in correct place
+        game = paintKeyboard(char,green,game)
+        game = paintGrid(char, green, game)
+        //paint the key in the gamegrid/keyboard green
+      } else {
+        if(game.answer.includes(word.charAt(idx))){ //key is misplaced
+          game = paintKeyboard(char,green,game)
+          game = paintGrid(char,yellow,game)
+          //paint the key in the gamegrid/keyboard yellow
+        } else { //key is not included
+          //paint the remaining keys red on the keyboard
+          game = paintKeyboard(char,red,game)
+        }
+      }      
+    }
+    return game
+  }
+}
 
+function win(game: Game): Game{
+  let tmp: Game = {...game}
+  tmp.win = true
+  return Object.freeze(tmp)
+}
+
+function paintKeyboard(char: string, colour: string, game: Game): Game{
+  let tmp = {...game}
+  tmp.keyboard = paintK(char,tmp.keyboard as string[][],colour)
+  return Object.freeze(tmp)
+}
+
+function paintGrid(char: string, colour: string, game: Game): Game{
+  let tmp = {...game}
+  console.log('Painting grid: '+tmp.grid)
+  tmp.grid = paintG(char,tmp.grid as string [][],colour)
+  return Object.freeze(tmp)
+}
+
+function paintK(char: string, data: string[][], colour: string): string[][]{
+  let letter: string = char.toUpperCase()
+  let tmp : string[][] = [...data]
+  for(let idx = 0; idx<tmp.length;idx++){
+    let row = tmp[idx]
+    if(row.includes(letter)){
+      row[row.indexOf(letter)]= colour+letter+reset
+    }
+  }
+  return tmp
+}
+
+function paintG(char: string, data: string[][], colour: string): string[][]{
+  let tmp : string[][] = [...data]
+  for(let idx = 0; idx<tmp.length;idx++){
+    let row = tmp[idx]
+    if(typeof row !== 'undefined' && row.includes(char)){
+      row[row.indexOf(char)]= colour+char+reset
+    }
+  }
+  return tmp
 }

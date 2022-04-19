@@ -32,14 +32,10 @@ var __toModule = (module2) => {
 };
 var import_prompt_sync = __toModule(require("prompt-sync"));
 var import_fs = __toModule(require("fs"));
-const rs = "[0m";
-const re = "[41m";
-const gr = "[42m";
-const ye = "[43m";
-const bl = "[44m";
-const ma = "[45m";
-const cy = "[46m";
-const wh = "[47m";
+const reset = "[0m";
+const red = "[41m";
+const green = "[42m";
+const yellow = "[43m";
 const input = (0, import_prompt_sync.default)();
 const answers = (0, import_fs.readFileSync)("answers.txt", "utf-8").split("\n");
 const words = (0, import_fs.readFileSync)("allwords.txt", "utf-8").split("\n");
@@ -90,21 +86,25 @@ function processString(word, data) {
   switch (word.length) {
     case 5: {
       if (data.hasOwnProperty("answer")) {
-        return data;
+        return validateWord(word, data);
       } else {
         return setMessage(data, "Game has not started yet!\nEnter a number to start a game.");
       }
     }
     case 4: {
       if (data.hasOwnProperty("answer")) {
-        return data;
+        if (data.inGame) {
+          return exitGame(data);
+        }
       } else {
         return processCommand(word, data);
       }
     }
     case 1: {
       if (data.hasOwnProperty("answer")) {
-        return data;
+        if (data.inGame) {
+          return exitGame(data);
+        }
       } else {
         return processNumber(word, data);
       }
@@ -156,13 +156,13 @@ function processNumber(word, settings) {
   if (isNaN(i)) {
     return setMessage(settings, "Invalid input, please try again!");
   } else {
-    let game2 = {
+    let game = {
       answer: answers[i],
       inGame: true,
       win: false,
       round: 0
     };
-    return newGame(settings, game2);
+    return newGame(settings, game);
   }
 }
 function setWin(settings) {
@@ -183,60 +183,82 @@ function setLoss(settings) {
   }
   return Object.freeze(tmp);
 }
-function newGame(settings, game2) {
-  const outcome = playGame(game2);
+function exitGame(game) {
+  let tmp = __spreadValues({}, game);
+  tmp.inGame = false;
+  return Object.freeze(tmp);
+}
+function newGame(settings, game) {
+  game = updateGrid(game, new Array(6).fill(void 0));
+  const outcome = playGame(game);
   if (typeof outcome !== "undefined") {
     if (outcome) {
+      game = setGameMessage(game, "You Won!");
       settings = setMessage(settings, "You Won!");
       settings = setWin(settings);
     } else {
-      settings = setMessage(settings, `You Lost! The answer was ${game2.answer}`);
+      settings = setMessage(settings, `You Lost! The answer was ${game.answer}`);
       settings = setLoss(settings);
+      game = setGameMessage(game, `You Lost! The answer was ${game.answer}`);
     }
+  } else {
+    game = setGameMessage(game, "Game exited!");
+    settings = setMessage(settings, `Game exited!`);
   }
-  game2 = {};
+  showMessage(game.msg);
+  printGrid(game.grid);
+  input("Press enter to get back to main menu");
   return settings;
 }
-function nextRound(game2) {
-  let tmp = __spreadValues({}, game2);
+function nextRound(game) {
+  let tmp = __spreadValues({}, game);
   tmp.round++;
   return Object.freeze(tmp);
 }
-function updateGrid(game2, grid) {
-  let tmp = __spreadValues({}, game2);
+function updateGrid(game, grid) {
+  let tmp = __spreadValues({}, game);
   tmp.grid = grid;
   return Object.freeze(tmp);
 }
-function updateKeyboard(game2, keyboard) {
-  let tmp = __spreadValues({}, game2);
+function updateKeyboard(game, keyboard) {
+  let tmp = __spreadValues({}, game);
   tmp.keyboard = keyboard;
   return Object.freeze(tmp);
 }
-function playGame(game2) {
-  while (game2.round < 6) {
-    showMessage(game2.msg);
-    printGrid(game2.grid);
-    game2 = printKeyboard(game2);
-    input();
-    game2 = nextRound(game2);
-    if (game2.win) {
-      return true;
+function playGame(game) {
+  showMessage(game.msg);
+  printGrid(game.grid);
+  game = printKeyboard(game);
+  console.log(`Round number: ${game.round}`);
+  game = processString(input("Enter your guess: "), game);
+  console.log("playGame: " + game.keyboard);
+  game = nextRound(game);
+  if (game.win) {
+    return true;
+  } else {
+    if (game.round < 6) {
+      if (game.inGame) {
+        return playGame(game);
+      } else {
+        return void 0;
+      }
     } else {
       return false;
     }
   }
-  return void 0;
 }
-function processWord(input2, game2) {
-  if (words.includes(input2)) {
+function validateWord(word, game) {
+  if (words.includes(word)) {
+    game = fillGrid(game, word);
+    return paintWord(word, game);
   } else {
-    return setGameMessage(game2, "Word does not figure among those valid!");
+    return setGameMessage(game, `${word} does not figure among valid words!`);
   }
 }
-function fillGrid(word) {
-  const wordArray = Array.from(word);
-  game[round - 1] = wordArray;
-  printGrid();
+function fillGrid(game, word) {
+  let tmp = __spreadValues({}, game);
+  tmp.grid[tmp.round] = Array.from(word);
+  return Object.freeze(tmp);
 }
 function convertRow(gameRow, separator) {
   if (typeof gameRow !== "undefined") {
@@ -249,9 +271,6 @@ function convertRow(gameRow, separator) {
 }
 function printGrid(grid) {
   let view = "";
-  if (typeof grid === "undefined") {
-    grid = new Array(6).fill(void 0);
-  }
   if (grid.length === 3) {
     view += keySeparator + "\n";
     grid.map((row) => view += convertRow(row, keySeparator));
@@ -261,9 +280,9 @@ function printGrid(grid) {
   }
   console.log(view);
 }
-function printKeyboard(game2, keyboard = void 0) {
-  let uK = new Array(3);
-  if (typeof keyboard === "undefined") {
+function printKeyboard(game) {
+  let uK;
+  if (typeof game.keyboard === "undefined") {
     let tmp = keys.split("P");
     tmp[0] += "P";
     tmp = tmp.concat(tmp[1].split("L"));
@@ -272,15 +291,67 @@ function printKeyboard(game2, keyboard = void 0) {
     tmp[2] = " " + tmp[2] + "  ";
     uK = tmp.map((row) => row.split(""));
   } else {
-    uK = __spreadValues({}, keyboard);
+    uK = [...game.keyboard];
   }
   printGrid(uK);
-  return updateKeyboard(game2, uK);
+  return updateKeyboard(game, uK);
 }
-function exists(array) {
-  if (typeof array != "undefined" && array != null && array.length != null && array.length > 0) {
-    return true;
+function paintWord(word, game) {
+  if (word === game.answer) {
+    return win(game);
+  } else {
+    for (let idx = 0; idx < word.length; idx++) {
+      let char = word.charAt(idx);
+      if (char === game.answer.charAt(idx)) {
+        game = paintKeyboard(char, green, game);
+        game = paintGrid(char, green, game);
+      } else {
+        if (game.answer.includes(word.charAt(idx))) {
+          game = paintKeyboard(char, green, game);
+          game = paintGrid(char, yellow, game);
+        } else {
+          game = paintKeyboard(char, red, game);
+        }
+      }
+    }
+    return game;
   }
-  return false;
+}
+function win(game) {
+  let tmp = __spreadValues({}, game);
+  tmp.win = true;
+  return Object.freeze(tmp);
+}
+function paintKeyboard(char, colour, game) {
+  let tmp = __spreadValues({}, game);
+  tmp.keyboard = paintK(char, tmp.keyboard, colour);
+  return Object.freeze(tmp);
+}
+function paintGrid(char, colour, game) {
+  let tmp = __spreadValues({}, game);
+  console.log("Painting grid: " + tmp.grid);
+  tmp.grid = paintG(char, tmp.grid, colour);
+  return Object.freeze(tmp);
+}
+function paintK(char, data, colour) {
+  let letter = char.toUpperCase();
+  let tmp = [...data];
+  for (let idx = 0; idx < tmp.length; idx++) {
+    let row = tmp[idx];
+    if (row.includes(letter)) {
+      row[row.indexOf(letter)] = colour + letter + reset;
+    }
+  }
+  return tmp;
+}
+function paintG(char, data, colour) {
+  let tmp = [...data];
+  for (let idx = 0; idx < tmp.length; idx++) {
+    let row = tmp[idx];
+    if (typeof row !== "undefined" && row.includes(char)) {
+      row[row.indexOf(char)] = colour + char + reset;
+    }
+  }
+  return tmp;
 }
 //# sourceMappingURL=index.js.map

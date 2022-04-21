@@ -1,133 +1,177 @@
+// these are the two libraries we need
+import prompt from 'prompt-sync'
+import {readFileSync} from 'fs'
+
+// these are some codes to get the console to print in colors
+// see examples below
+const reset = "\x1b[0m"
+const red = "\x1b[41m"
+const green = "\x1b[42m"
+const yellow = "\x1b[43m"
+
+const input = prompt();
+
+// this is how to read data from the files
+const answers:string[] = readFileSync('answers.txt', 'utf-8').split("\n")
+const words: string[] = readFileSync('allwords.txt', 'utf-8').split("\n")
+
 const rowSeparator: string = '|---|---|---|---|---|'
+const keySeparator: string = '|---|---|---|---|---|---|---|---|---|---|'
 const rowEmpty: string = '|   |   |   |   |   |'
-let message : string
-let answer: string
-let hardMode: boolean = false
-let keepPlaying: boolean = true
-let inGame: boolean = false
-let round: number = 0
-let wins: number = 0
-let losses: number = 0
-let game: string[][]
 
-//Step 1: User chooses answer (not known) --> random?
-//Step 2: Setup game
-//Step 3: Play
-//Step 4: Win/Loss, add to stats
+const keys: string = 'QWERTYUIOPASDFGHJKLZXCVBNM'
 
-startGame()
+interface Settings{
+  msg: string,
+  keepPlaying?: boolean,
+  wins?: number,
+  losses?: number,
+  hardMode?: boolean
+  }
+
+interface Game{
+  msg?: string,
+  grid?: string[][],
+  keyboard?: string[][],
+  answer: string,
+  round: number,
+  win: boolean,
+  inGame: boolean
+  checked?: string[]
+  }
+
+mainMenu()
+
+function setMessage (settings: Settings, message: string): Settings{
+  let tmp = {...settings}
+  tmp.msg = message
+  return Object.freeze(tmp)
+}
+
+  function setGameMessage (settings: Game, message: string): Game{
+  let tmp = {...settings}
+  tmp.msg = message
+  return Object.freeze(tmp) 
+}
+
+function setMode(settings: Settings, mode: boolean): Settings{
+  let tmp = {...settings}
+  tmp.hardMode = mode
+  return Object.freeze(tmp)
+}
+
+function playMore (settings: Settings, answer: boolean): Settings{
+  let tmp = {...settings}
+  tmp.keepPlaying = answer
+  return Object.freeze(tmp)
+}
 
 /*starts the game by reading input and filtering 
 if there are commands. Needed in order to handle 
 each possible case of the input function*/
-function startGame (){
-  showMessage()
-  const i = input(`enter a number between 0 and ${answers.length}: `)
-  processString(i)
-  if(keepPlaying){
-    startGame()
+function mainMenu (settings : Settings = {
+  msg : 'Welcome', 
+  keepPlaying : true,
+  wins: 0,
+  losses: 0
+} ){
+  while(settings.keepPlaying){
+    showMessage(settings.msg)
+    const i = input(`enter a number between 0 and ${answers.length}: `)
+    settings = processString(i, settings) as Settings
   }
 }
 
 /*prints the message according to whether it is the
 startup, the main menu or in-game*/
-function showMessage(){
-  console.clear()
-  if(typeof message !== 'undefined'){
-     console.log(message+'\n')
+function showMessage(message : string, inGame : boolean = false){
+  //console.clear()
+  console.log(message+'\n')
     if(!inGame){
       console.log('Type HELP to list all the commands\nor type QUIT to quit.\nTo choose an answer ')
     }
-  } else {
-    console.log('Welcome!\n')
-    console.log('Type HELP to list all the commands\nor type QUIT to quit.\nTo choose an answer ')
-  }
 }
 
 /*Processes the input, by sorting it between words, commands or numbers. If it does not fall within these categories it is treated as invalid input*/
-function processString(input: string){
-  switch(input.length){
-      //should be a grid input
+function processString(word: string, data: Settings|Game):Settings|Game{
+  switch(word.length){
+       /*this case can be accessed in 2 contexts, if we are in the main menu we need to signal an error, if we are in a game we have to validate the input word*/
     case 5:{
-      processWord(input)
-      break
+      //distinguish between game and settings
+      if(data.hasOwnProperty('answer')){
+        return validateWord(word, data as Game)
+      } else {
+        return setMessage(data as Settings,'Game has not started yet!\nEnter a number to start a game.')
+      }
     }
-      //should be a command
     case 4:{
-      processCommand(input)
-      break
+      //it's a command
+      if(data.hasOwnProperty('answer')){
+        //we are in a game
+        //quit the game and reopen the main menu
+        if((data as Game).inGame){
+           return exitGame(data as Game) as Game
+         }
+      } else {
+        return processCommand(word,data as Settings)
+      }
     }
-      //should be a number
     case 1:{
-      processNumber(input)
-      break
+      //it's a number
+       if(data.hasOwnProperty('answer')){
+         if((data as Game).inGame ){
+           return exitGame(data as Game)
+         }
+        //we are in a game
+        //quit the game and reopen main menu
+      } else {
+        return processNumber(word,data as Settings)
+      }
     }
-      //the rest is invalid
     default:{
-      message = 'Invalid input, please try again!'
-      break
+      return setMessage(data as Settings, 'Invalid input, please try again!')
     }
   }
 }
 
-/*inserts the word in the game-grid if the
-game has started and it is valid, otherwise sends a warning.*/
-function processWord(input: string) {
-  if(inGame){
-    if(words.includes(input)){
-      fillGrid(input)
-    } else {
-      message = 'Word does not figure among those valid!'
-    }
-  } else {
-    message = 'Game has not started yet!\nEnter a number to start a game.'
-  }
-}
 
 /*process any given word in instructions,
 provided that it is valid. Otherwise returns
 an invalid input message*/
-function processCommand(input: string) {
-  inGame = false
+function processCommand(input: string, settings: Settings): Settings{
+  console.clear()
   switch(input){
       case "QUIT":{
-        keepPlaying = false
         console.clear()
-        break
+        return playMore(settings,false)
       }
         //both cases either switch the mode or do nothing
       case "EASY": {
-        if(hardMode){
-          message = 'Hard mode disabled.'
-          hardMode = false
+        if(settings.hardMode){
+          settings = setMessage(settings,'Hard mode disabled!')
+          return setMode(settings, false)
         } else {
-          message = 'Hard mode is already disabled!'
+          return setMessage(settings,'Hard mode is already disabled!')
         }
-        break
       }
       case "HARD": {
-        if(!hardMode){
-          message = 'Hard mode enabled.'
-          hardMode = true
+        if(!settings.hardMode){
+          settings = setMessage(settings,'Hard mode enabled.')
+          return setMode(settings,true)
         } else {
-          message = 'Hard mode is already enabled!'
+          return setMessage(settings,'Hard mode is already enabled!')
         }
-        break
       }
         //prints the command list
       case "HELP": {
-        message = 'The available commands are:\n'+
-          'HELP       shows this list\nEASY/HARD  switches between easy and hard mode'+'\nSTAT       prints the statistics\nQUIT       exits the game'
-        break
+        return setMessage(settings,'The available commands are:\nHELP       shows this list\nEASY/HARD  switches between easy and hard mode\nSTAT       prints the statistics\nQUIT       exits the game')
       }
       case "STAT": {
-        message = `Current statistics:\n\n${wins}  games won\n${losses}  games lost`
-        break
+        return setMessage(settings, `Current statistics:\n\n${settings.wins}  games won\n${settings.losses}  games lost`)
       }
-        default:{
-          message = 'Invalid command, please try again!'
-          break
-        }  
+    default:{
+          return setMessage(settings, 'Invalid command, please try again!')
+      }  
     }
 }
 
@@ -135,121 +179,206 @@ function processCommand(input: string) {
 provided that it is a number, 
 if so starts a new game. Otherwise returns
 an invalid input message*/
-function processNumber(input: string) {
-  let i: number = parseInt(input)
+function processNumber(word: string,settings: Settings):Settings{
+  let i: number = parseInt(word)
   if(isNaN(i)){
-    message = 'Invalid input, please try again!'
+    return setMessage(settings,'Invalid input, please try again!')
   } else {
-    inGame = true
-    answer = answers[i]
-    newGame()
+    let game: Game = {
+      answer : answers[i],
+      inGame: true,
+      win: false,
+      round: 0
+    }
+    return newGame(settings,game)
   }
 }
 
-/*Sets up the newly started game*/
-function newGame(){
-  game = new Array()
-  round = 0
-  let win: boolean = false 
-  oneRound()
-  if(win){
-    wins++
+function setWin(settings: Settings): Settings{
+  let tmp = {...settings}
+  if(typeof tmp.wins === 'undefined'){
+    tmp.wins = 1
   } else {
-    losses++
+    tmp.wins++
   }
-  round = 0
-  inGame = false
-  input('wait')
+  return Object.freeze(tmp)
 }
 
-/*runs one round of the game*/
-function playRound(answer: string, round: number) {
-  let word: string 
-  switch(round){
-    case 1:{
-      round++
-      message = 'Game has started!'
-      showMessage()
-      emptyGrid(game)
-      word = input('Enter the first guess ')
-      processString(word)
-      break
+function setLoss(settings: Settings): Settings{
+  let tmp = {...settings}
+  if(typeof tmp.losses === 'undefined'){
+    tmp.losses = 1
+  } else {
+    tmp.losses++
+  }
+  return Object.freeze(tmp)
+}
+
+function exitGame(game: Game):Game {
+  let tmp: Game = {...game}
+  tmp.inGame = false
+  return Object.freeze(tmp)
+}
+
+function newGame(settings: Settings, game: Game): Settings {
+  const outcome: boolean|undefined = playGame(game)
+  if(typeof outcome !== 'undefined'){
+    if(outcome){
+    settings = setMessage(settings, 'You Won!')
+    settings = setWin(settings)
+    } else {
+      settings = setMessage(settings, `You Lost! The answer was ${game.answer}`)
+      settings = setLoss(settings)
     }
-    case 6:{
-      message = 'Last round!'
-      showMessage()
-      word = input('Enter your last guess ')
-      processString(word)
-      round++
-      break
+  } else {
+    settings = setMessage(settings, `Game exited!`)
+  }
+
+  return settings
+}
+
+function nextRound(game: Game):Game{
+  let tmp = {...game}
+  tmp.round++
+  return Object.freeze(tmp)
+}
+
+function updateGrid(game: Game, grid: string[][]):Game{
+  let tmp = {...game}
+  tmp.grid = grid
+  return Object.freeze(tmp)
+}
+
+function updateKeyboard(game: Game, keyboard: string[][]):Game{
+  let tmp = {...game}
+  tmp.keyboard = keyboard
+  return Object.freeze(tmp)
+}
+
+function playGame(game : Game): boolean|undefined{
+  showMessage(game.msg as string)
+  printGrid(game.grid as string[][])
+  game = printKeyboard(game)
+  console.log(`Round number: ${game.round}`)
+  game = (processString(input('Enter your guess: '), game)) as Game
+  game = nextRound(game)
+
+  if(game.win){ //game is won
+    return true
+  } else { //game is still not beaten
+    if(game.round<6){ //we still have rounds left
+      if(game.inGame){ //we are still playing
+        return playGame(game) //proceed with the next round
+      } else { //we are no longer playing
+        return undefined //user has inputted a number/command, exit the game
+      }
+    } else { //there are no rounds left
+      return false //game is lost
     }
-    default:{
-      showMessage()
-      word = input('Enter the next guess ')
-      processString(word)
-      round++
-      break
+  }
+}
+
+/*inserts the word in the game-grid if the
+game has started and it is valid, otherwise sends a warning.*/
+function validateWord(word: string, game: Game): Game{
+  if(words.includes(word)){
+      return checkWord(word, game)
+    } else {
+      return setGameMessage(game,`${word} does not figure among valid words!`)
     }
-  }
-  if(round < 7){
-    console.log('Round number '+round)
-    input('wait')
-    playRound(answer,round)
-  }
-  //show table
-  //show keyboard
-  //await input
-  //validate input
-}
-
-function oneRound() {
-  round++
-  if(round === 1){
-    message = 'Game has started!'
-  }
-  showMessage()
-  printGrid()
-  word = input('Enter the first guess ')
-  processString(word)
-  if(!words.includes(word)){
-    message = 'wrong word'
-    oneRound()
-  }
-  console.log(game)
-}
-
-function fillGrid(word: string) {
-  const wordArray: string[] = Array.from(word)
-  game[round-1]= wordArray
-  printGrid()
-}
-
-function emptyGrid(grid: string[][]) {
-  let view: string = rowSeparator+'\n'
-  for (let index = 0; index < grid.length; index++) {
-    view = view + rowEmpty+'\n' + rowSeparator+'\n'
-  }
-  console.log(view)
 }
 
 /*converts any provided array of strings into the
 printable table format*/
-function convertRow(gameRow : string[]): string {
+function convertRow(gameRow : string[], separator: string): string {
   if(typeof gameRow !== 'undefined'){
     let gridRow: string = "| "
-  for (let index = 0; index < gameRow.length; index++) {
-    gridRow = gridRow + gameRow[index]+ " | "
-  }
-    return gridRow + '\n' + rowSeparator + '\n'
+    gameRow.map(element=> gridRow+=element+ " | ")
+    return gridRow + '\n' + separator + '\n'
   } else {
-    return rowEmpty + '\n' + rowSeparator + '\n'
+    return rowEmpty + '\n' + separator + '\n'
   }
 }
 
-function printGrid() {
-  let view: string = rowSeparator+'\n'
-  for (let index = 0; index < 6; index++) {
-    view = view + convertRow(game[index])
+function printGrid(grid: string[][]) {
+  let view: string = ''
+  if(typeof grid === 'undefined'){
+    grid = new Array(6).fill(undefined)
   }
+  if(grid.length === 3){
+    view+=keySeparator+'\n'
+    grid.map(row=> view+=convertRow(row, keySeparator))
+  } else {
+    view+=rowSeparator+'\n'
+    grid.map(row=> view+=convertRow(row, rowSeparator))
+  }
+  
   console.log(view)
+}
+
+function printKeyboard(game: Game, keyboard: string[][]|undefined = undefined):Game{
+  let uK: string [][]
+  if(typeof keyboard === 'undefined'){
+    let tmp = keys.split('P')
+    tmp[0]+='P'
+    tmp = tmp.concat(tmp[1].split('L'))
+    tmp.splice(1,1)
+    tmp[1]+='L '
+    tmp[2]=' '+tmp[2]+'  '
+    
+    uK = tmp.map(row => row.split(''))
+  } else {
+    uK = {...keyboard}
+  }
+  printGrid(uK)
+  return updateKeyboard(game, uK)
+}
+
+function checkWord(word: string, game: Game): Game{
+  if(word === game.answer){
+    return win(game)
+  } else {
+    for(let idx = 0; idx<word.length; idx++){
+      let char = word.charAt(idx)
+      if(char===game.answer.charAt(idx)){ //key is in correct place
+         console.log(`${word.charAt(idx)} is the same for index ${idx} both in ${word} and ${game.answer}`)
+        //paint the key in the gamegrid/keyboard green
+      } else {
+        if(game.answer.includes(word.charAt(idx))){ //key is misplaced
+          console.log(`${game.answer} contains the character ${word.charAt(idx)}`)
+          //paint the key in the gamegrid/keyboard yellow
+        } else { //key is not included
+          //paint the remaining keys red on the keyboard
+          game = paintKeyboard(char,red,game)
+        }
+      }      
+    }
+    return game
+  }
+}
+
+function win(game: Game): Game{
+  let tmp: Game = {...game}
+  tmp.win = true
+  return Object.freeze(tmp)
+}
+
+function paintKeyboard(char: string, colour: string, game: Game): Game{
+  let tmp = {...game}
+  console.log(`Trying to paint the character ${char} in the keyboard ${tmp.keyboard}`)
+  tmp.keyboard = paint(char,tmp.keyboard,colour)
+  console.log(`Painted keyboard: ${tmp.keyboard}`)
+  return Object.freeze(tmp)
+}
+
+function paint(char: string, data: string[][], colour: string): string[][]{
+  let tmp : string[][] = [...data]
+  for(let idx = 0; idx<tmp.length;idx++){
+    row = tmp[idx]
+    console.log(char.toUpperCase())
+    if(row.includes(char.toUpperCase())){
+      row[row.indexOf(char)]= red+char+reset
+    }
+  }
+  return tmp
 }

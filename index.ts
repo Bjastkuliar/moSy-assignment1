@@ -35,7 +35,7 @@ interface Game{
   keyboard?: string[][],
   answer: string,
   round: number,
-  win: boolean,
+  win?: boolean,
   inGame: boolean
   checked?: string[]
   }
@@ -187,7 +187,6 @@ function processNumber(word: string,settings: Settings):Settings{
     let game: Game = {
       answer : answers[i],
       inGame: true,
-      win: false,
       round: 0
     }
     return newGame(settings,game)
@@ -222,9 +221,9 @@ function exitGame(game: Game):Game {
 
 function newGame(settings: Settings, game: Game): Settings {
   game = fillGrid(game)
-  const outcome: boolean|undefined = playGame(game)
-  if(typeof outcome !== 'undefined'){
-    if(outcome){
+  game = playGame(game)
+  if(typeof game.win !== 'undefined'){
+    if(game.win){
       game = setGameMessage(game, 'You Won!')
       settings = setMessage(settings, 'You Won!')
       settings = setWin(settings)
@@ -260,23 +259,28 @@ function playGame(game : Game): boolean|undefined{
   printGrid(game.grid as string[][])
   game = printKeyboard(game)
   console.log(`Round number: ${game.round}`)
-  game = (processString(input('Enter your guess: '), game)) as Game
-  console.log('playGame: '+game.keyboard)
+  let word = input('Enter your guess: ')
+  game = (processString(word, game)) as Game
   game = nextRound(game)
-
-  if(game.win){ //game is won
-    return true
+  if(word === game.answer){ //game is won
+    return win(game)
   } else { //game is still not beaten
     if(game.round<6){ //we still have rounds left
       if(game.inGame){ //we are still playing
         return playGame(game) //proceed with the next round
       } else { //we are no longer playing
-        return undefined //user has inputted a number/command, exit the game
+        return game //user has inputted a number/command, exit the game
       }
     } else { //there are no rounds left
-      return false //game is lost
+      return lost(game) //game is lost
     }
   }
+}
+
+function lost(game: Game): Game{
+  let tmp = {...game}
+  tmp.win = false
+  return Object.freeze(tmp)
 }
 
 /*inserts the word in the game-grid if the
@@ -342,10 +346,7 @@ function printKeyboard(game: Game):Game{
 }
 
 function paintWord(word: string, game: Game): Game{
-  if(word === game.answer){
-    
-    return win(game)
-  } else {
+  if(word !== game.answer){
     for(let idx = 0; idx<word.length; idx++){
       let char = word.charAt(idx)
       if(char===game.answer.charAt(idx)){ //key is in correct place
@@ -362,9 +363,15 @@ function paintWord(word: string, game: Game): Game{
           game = paintKeyboard(char,red,game)
         }
       }      
+    }    
+  } else {
+    for(let idx = 0; idx<word.length; idx++){
+      let char = word.charAt(idx)
+      game = paintKeyboard(char,green,game)
+      game = paintGrid(char, green, game)
     }
-    return game
   }
+  return game
 }
 
 function win(game: Game): Game{
@@ -381,7 +388,6 @@ function paintKeyboard(char: string, colour: string, game: Game): Game{
 
 function paintGrid(char: string, colour: string, game: Game): Game{
   let tmp = {...game}
-  console.log('Painting grid: '+tmp.grid)
   tmp.grid = paintG(char,tmp.grid as string [][],colour)
   return Object.freeze(tmp)
 }

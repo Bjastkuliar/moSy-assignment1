@@ -159,7 +159,6 @@ function processNumber(word, settings) {
     let game = {
       answer: answers[i],
       inGame: true,
-      win: false,
       round: 0
     };
     return newGame(settings, game);
@@ -190,9 +189,9 @@ function exitGame(game) {
 }
 function newGame(settings, game) {
   game = fillGrid(game);
-  const outcome = playGame(game);
-  if (typeof outcome !== "undefined") {
-    if (outcome) {
+  game = playGame(game);
+  if (typeof game.win !== "undefined") {
+    if (game.win) {
       game = setGameMessage(game, "You Won!");
       settings = setMessage(settings, "You Won!");
       settings = setWin(settings);
@@ -225,22 +224,27 @@ function playGame(game) {
   printGrid(game.grid);
   game = printKeyboard(game);
   console.log(`Round number: ${game.round}`);
-  game = processString(input("Enter your guess: "), game);
-  console.log("playGame: " + game.keyboard);
+  let word = input("Enter your guess: ");
+  game = processString(word, game);
   game = nextRound(game);
-  if (game.win) {
-    return true;
+  if (word === game.answer) {
+    return win(game);
   } else {
     if (game.round < 6) {
       if (game.inGame) {
         return playGame(game);
       } else {
-        return void 0;
+        return game;
       }
     } else {
-      return false;
+      return lost(game);
     }
   }
+}
+function lost(game) {
+  let tmp = __spreadValues({}, game);
+  tmp.win = false;
+  return Object.freeze(tmp);
 }
 function validateWord(word, game) {
   if (words.includes(word)) {
@@ -296,9 +300,7 @@ function printKeyboard(game) {
   return updateKeyboard(game, uK);
 }
 function paintWord(word, game) {
-  if (word === game.answer) {
-    return win(game);
-  } else {
+  if (word !== game.answer) {
     for (let idx = 0; idx < word.length; idx++) {
       let char = word.charAt(idx);
       if (char === game.answer.charAt(idx)) {
@@ -313,8 +315,14 @@ function paintWord(word, game) {
         }
       }
     }
-    return game;
+  } else {
+    for (let idx = 0; idx < word.length; idx++) {
+      let char = word.charAt(idx);
+      game = paintKeyboard(char, green, game);
+      game = paintGrid(char, green, game);
+    }
   }
+  return game;
 }
 function win(game) {
   let tmp = __spreadValues({}, game);
@@ -328,7 +336,6 @@ function paintKeyboard(char, colour, game) {
 }
 function paintGrid(char, colour, game) {
   let tmp = __spreadValues({}, game);
-  console.log("Painting grid: " + tmp.grid);
   tmp.grid = paintG(char, tmp.grid, colour);
   return Object.freeze(tmp);
 }

@@ -189,7 +189,7 @@ function exitGame(game) {
   return Object.freeze(tmp);
 }
 function newGame(settings, game) {
-  game = updateGrid(game, new Array(6).fill(void 0));
+  game = fillGrid(game);
   const outcome = playGame(game);
   if (typeof outcome !== "undefined") {
     if (outcome) {
@@ -213,11 +213,6 @@ function newGame(settings, game) {
 function nextRound(game) {
   let tmp = __spreadValues({}, game);
   tmp.round++;
-  return Object.freeze(tmp);
-}
-function updateGrid(game, grid) {
-  let tmp = __spreadValues({}, game);
-  tmp.grid = grid;
   return Object.freeze(tmp);
 }
 function updateKeyboard(game, keyboard) {
@@ -257,7 +252,11 @@ function validateWord(word, game) {
 }
 function fillGrid(game, word) {
   let tmp = __spreadValues({}, game);
-  tmp.grid[tmp.round] = Array.from(word);
+  if (typeof word === "undefined") {
+    tmp.grid = new Array(6).fill(void 0);
+  } else {
+    tmp.grid[tmp.round] = Array.from(word);
+  }
   return Object.freeze(tmp);
 }
 function convertRow(gameRow, separator) {

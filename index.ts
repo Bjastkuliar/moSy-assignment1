@@ -221,7 +221,7 @@ function exitGame(game: Game):Game {
 }
 
 function newGame(settings: Settings, game: Game): Settings {
-  game = updateGrid(game,new Array(6).fill(undefined))
+  game = fillGrid(game)
   const outcome: boolean|undefined = playGame(game)
   if(typeof outcome !== 'undefined'){
     if(outcome){
@@ -237,8 +237,8 @@ function newGame(settings: Settings, game: Game): Settings {
     game = setGameMessage(game,'Game exited!')
     settings = setMessage(settings, `Game exited!`)
   }
-  showMessage(game.msg)
-  printGrid(game.grid)
+  showMessage(game.msg as string)
+  printGrid(game.grid as string[][])
   input('Press enter to get back to main menu')
   return settings
 }
@@ -246,12 +246,6 @@ function newGame(settings: Settings, game: Game): Settings {
 function nextRound(game: Game):Game{
   let tmp = {...game}
   tmp.round++
-  return Object.freeze(tmp)
-}
-
-function updateGrid(game: Game, grid: string[][]):Game{
-  let tmp = {...game}
-  tmp.grid = grid
   return Object.freeze(tmp)
 }
 
@@ -296,9 +290,13 @@ function validateWord(word: string, game: Game): Game{
   }
 }
 
-function fillGrid(game: Game, word: string): Game{
+function fillGrid(game: Game, word: string|undefined): Game{
   let tmp = {...game}
-  tmp.grid[tmp.round] = Array.from(word)
+  if(typeof word === 'undefined'){
+    tmp.grid = new Array(6).fill(undefined)
+  } else {
+    tmp.grid[tmp.round] = Array.from(word)
+  }
   return Object.freeze(tmp)
 }
 
@@ -345,6 +343,7 @@ function printKeyboard(game: Game):Game{
 
 function paintWord(word: string, game: Game): Game{
   if(word === game.answer){
+    
     return win(game)
   } else {
     for(let idx = 0; idx<word.length; idx++){

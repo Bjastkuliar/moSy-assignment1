@@ -85,6 +85,7 @@ function showMessage(message, inGame = false) {
 function processString(word, data) {
   switch (word.length) {
     case 5: {
+      word = word.toLowerCase();
       if (data.hasOwnProperty("answer")) {
         return validateWord(word, data);
       } else {
@@ -92,6 +93,7 @@ function processString(word, data) {
       }
     }
     case 4: {
+      word = word.toUpperCase();
       if (data.hasOwnProperty("answer")) {
         if (data.inGame) {
           return exitGame(data);
@@ -254,7 +256,7 @@ function validateWord(word, game) {
     return setGameMessage(game, `${word} does not figure among valid words!`);
   }
 }
-function fillGrid(game, word) {
+function fillGrid(game, word = void 0) {
   let tmp = __spreadValues({}, game);
   if (typeof word === "undefined") {
     tmp.grid = new Array(6).fill(void 0);
@@ -308,8 +310,16 @@ function paintWord(word, game) {
         game = paintGrid(char, green, game);
       } else {
         if (game.answer.includes(word.charAt(idx))) {
-          game = paintKeyboard(char, green, game);
-          game = paintGrid(char, yellow, game);
+          if (count(word, char) > 1) {
+            let scoredWord = scoreWord(word, game);
+            if (idx !== maxScorePos(char, scoredWord) - 1) {
+              game = paintKeyboard(char, green, game);
+              game = paintGrid(char, reset, game);
+            }
+          } else {
+            game = paintKeyboard(char, green, game);
+            game = paintGrid(char, yellow, game);
+          }
         } else {
           game = paintKeyboard(char, red, game);
         }
@@ -323,6 +333,34 @@ function paintWord(word, game) {
     }
   }
   return game;
+}
+function scoreWord(word, game) {
+  let arr = new Array(word.length).fill(void 0);
+  for (let idx = 0; idx < word.length; idx++) {
+    let char = {
+      char: word.charAt(idx),
+      score: 0
+    };
+    char.repeated = count(word, char.char) > 1;
+    if (game.answer.charAt(idx) === word.charAt(idx)) {
+      char.score = 2;
+    } else {
+      if (game.answer.includes(char.char)) {
+        char.score = 1;
+      }
+    }
+    arr.splice(idx, 1, char);
+  }
+  return arr;
+}
+function hasDoubles(word) {
+  let lowercase = word.toLocaleLowerCase();
+  let set = new Set(lowercase);
+  if (lowercase.length === set.size) {
+    return false;
+  } else {
+    return true;
+  }
 }
 function win(game) {
   let tmp = __spreadValues({}, game);
@@ -359,5 +397,22 @@ function paintG(char, data, colour) {
     }
   }
   return tmp;
+}
+function count(word, c) {
+  var result = 0, i = 0;
+  for (i; i < word.length; i++)
+    if (word[i] == c)
+      result++;
+  return result;
+}
+;
+function maxScorePos(char, scoredWord) {
+  let maxScorePos2 = 0;
+  for (let idx = 0; idx < scoredWord.length; idx++) {
+    if (scoredWord[idx].char === char) {
+      maxScorePos2 = idx;
+    }
+  }
+  return maxScorePos2 + 1;
 }
 //# sourceMappingURL=index.js.map

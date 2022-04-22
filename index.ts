@@ -40,6 +40,12 @@ interface Game{
   checked?: string[]
   }
 
+interface scoredChar{
+    char: string,
+    score: number,
+    repeated?: boolean
+}
+
 mainMenu()
 
 function setMessage (settings: Settings, message: string): Settings{
@@ -97,6 +103,7 @@ function processString(word: string, data: Settings|Game):Settings|Game{
   switch(word.length){
        /*this case can be accessed in 2 contexts, if we are in the main menu we need to signal an error, if we are in a game we have to validate the input word*/
     case 5:{
+      word = word.toLowerCase()
       //distinguish between game and settings
       if(data.hasOwnProperty('answer')){
         return validateWord(word, data as Game)
@@ -106,6 +113,7 @@ function processString(word: string, data: Settings|Game):Settings|Game{
     }
     case 4:{
       //it's a command
+      word = word.toUpperCase()
       if(data.hasOwnProperty('answer')){
         //we are in a game
         //quit the game and reopen the main menu
@@ -254,7 +262,7 @@ function updateKeyboard(game: Game, keyboard: string[][]):Game{
   return Object.freeze(tmp)
 }
 
-function playGame(game : Game): boolean|undefined{
+function playGame(game : Game): Game{
   showMessage(game.msg as string)
   printGrid(game.grid as string[][])
   game = printKeyboard(game)
@@ -294,7 +302,7 @@ function validateWord(word: string, game: Game): Game{
   }
 }
 
-function fillGrid(game: Game, word: string|undefined): Game{
+function fillGrid(game: Game, word: string|undefined = undefined): Game{
   let tmp = {...game}
   if(typeof word === 'undefined'){
     tmp.grid = new Array(6).fill(undefined)
@@ -347,23 +355,33 @@ function printKeyboard(game: Game):Game{
 
 function paintWord(word: string, game: Game): Game{
   if(word !== game.answer){
+    /*We need to handle cases in which either the answer or the word have duplicate characters. There are four possible cases, either the answer has/hasn't duplicates and/or the word has/hasn't duplicates. We need only to handle the case in which the answer has no duplicate while the word has some, because the other cases are automatically handled by the default case*/
     for(let idx = 0; idx<word.length; idx++){
       let char = word.charAt(idx)
       if(char===game.answer.charAt(idx)){ //key is in correct place
         game = paintKeyboard(char,green,game)
         game = paintGrid(char, green, game)
         //paint the key in the gamegrid/keyboard green
-      } else {
+      } else {        
         if(game.answer.includes(word.charAt(idx))){ //key is misplaced
-          game = paintKeyboard(char,green,game)
-          game = paintGrid(char,yellow,game)
-          //paint the key in the gamegrid/keyboard yellow
+          if(count(word, char)>1){
+            let scoredWord: scoredChar[] = scoreWord(word, game)
+            if(idx !== maxScorePos(char, scoredWord)-1){
+              game = paintKeyboard(char,green,game)
+              game = paintGrid(char,reset,game)
+            } 
+          } else {
+            game = paintKeyboard(char,green,game)
+            game = paintGrid(char,yellow,game)
+            //paint the key in the gamegrid/keyboard yellow
+          }
         } else { //key is not included
           //paint the remaining keys red on the keyboard
           game = paintKeyboard(char,red,game)
-        }
-      }      
-    }    
+          }
+        }      
+      }
+    
   } else {
     for(let idx = 0; idx<word.length; idx++){
       let char = word.charAt(idx)
@@ -372,6 +390,38 @@ function paintWord(word: string, game: Game): Game{
     }
   }
   return game
+}
+
+function scoreWord(word: string, game: Game): scoredChar[]{
+    let arr : scoredChar[] = new Array(word.length).fill(undefined)
+
+    for(let idx = 0; idx<word.length; idx++){
+        let char : scoredChar = {
+            char: word.charAt(idx),
+            score:0
+        }
+        char.repeated = count(word,char.char)>1
+    
+        if(game.answer.charAt(idx) === word.charAt(idx)){
+            char.score = 2
+        } else {
+            if(game.answer.includes(char.char)){
+            char.score = 1
+            }
+        }
+        arr.splice(idx,1,char)
+    }
+    return arr
+}
+
+function hasDoubles(word: string): boolean{
+  let lowercase: string = word.toLocaleLowerCase()
+  let set : Set<string> = new Set(lowercase)
+  if(lowercase.length === set.size){
+    return false
+  } else {
+    return true
+  }
 }
 
 function win(game: Game): Game{
@@ -413,4 +463,20 @@ function paintG(char: string, data: string[][], colour: string): string[][]{
     }
   }
   return tmp
+}
+
+function count(word: string, c: string): number { 
+  var result = 0, i = 0;
+  for(i;i<word.length;i++)if(word[i]==c)result++;
+  return result;
+};
+
+function maxScorePos(char: string, scoredWord: scoredChar[]):number{
+    let maxScorePos = 0
+    for(let idx = 0; idx<scoredWord.length;idx++){
+        if(scoredWord[idx].char === char){
+            maxScorePos = idx
+        }
+    }
+    return maxScorePos+1
 }

@@ -37,7 +37,8 @@ interface Game{
   round: number,
   win?: boolean,
   inGame: boolean
-  checked?: string[]
+  checked?: string[],
+  partialAnswer?: string[]
   }
 
 interface scoredChar{
@@ -227,7 +228,23 @@ function exitGame(game: Game):Game {
   return Object.freeze(tmp)
 }
 
+function correctChars(game:Game, guess: string): Game{
+  let tmp = {...game}
+  if(typeof tmp.partialAnswer === 'undefined'){
+    tmp.partialAnswer = new Array()
+  }
+  for(let i = 0; i<guess.length; i++){
+    if(game.answer.includes(guess.charAt(i))){
+      if(tmp.partialAnswer.contains(guess.charAt(i))){
+        tmp.partialAnswer.push(guess.charAt(i))
+      }
+    }
+  }
+  return Object.freeze(tmp)
+}
+
 function newGame(settings: Settings, game: Game): Settings {
+  
   game = fillGrid(game)
   game = playGame(game)
   if(typeof game.win !== 'undefined'){
@@ -269,7 +286,6 @@ function playGame(game : Game): Game{
   console.log(`Round number: ${game.round}`)
   let word = input('Enter your guess: ')
   game = (processString(word, game)) as Game
-  game = nextRound(game)
   if(word === game.answer){ //game is won
     return win(game)
   } else { //game is still not beaten
@@ -295,6 +311,7 @@ function lost(game: Game): Game{
 game has started and it is valid, otherwise sends a warning.*/
 function validateWord(word: string, game: Game): Game{
   if(words.includes(word)){
+    game = nextRound(game)
     game = fillGrid(game, word)
     return paintWord(word, game)
   } else {
@@ -304,10 +321,12 @@ function validateWord(word: string, game: Game): Game{
 
 function fillGrid(game: Game, word: string|undefined = undefined): Game{
   let tmp = {...game}
-  if(typeof word === 'undefined'){
+  if(typeof tmp.grid === 'undefined'){
     tmp.grid = new Array(6).fill(undefined)
   } else {
-    tmp.grid[tmp.round] = Array.from(word)
+    if(typeof word!== 'undefined'){
+      tmp.grid[tmp.round-1] = Array.from(word)
+    }
   }
   return Object.freeze(tmp)
 }

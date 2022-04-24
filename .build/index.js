@@ -189,6 +189,20 @@ function exitGame(game) {
   tmp.inGame = false;
   return Object.freeze(tmp);
 }
+function correctChars(game, guess) {
+  let tmp = __spreadValues({}, game);
+  if (typeof tmp.partialAnswer === "undefined") {
+    tmp.partialAnswer = new Array();
+  }
+  for (let i = 0; i < guess.length; i++) {
+    if (game.answer.includes(guess.charAt(i))) {
+      if (tmp.partialAnswer.contains(guess.charAt(i))) {
+        tmp.partialAnswer.push(guess.charAt(i));
+      }
+    }
+  }
+  return Object.freeze(tmp);
+}
 function newGame(settings, game) {
   game = fillGrid(game);
   game = playGame(game);
@@ -228,7 +242,6 @@ function playGame(game) {
   console.log(`Round number: ${game.round}`);
   let word = input("Enter your guess: ");
   game = processString(word, game);
-  game = nextRound(game);
   if (word === game.answer) {
     return win(game);
   } else {
@@ -250,6 +263,7 @@ function lost(game) {
 }
 function validateWord(word, game) {
   if (words.includes(word)) {
+    game = nextRound(game);
     game = fillGrid(game, word);
     return paintWord(word, game);
   } else {
@@ -258,10 +272,12 @@ function validateWord(word, game) {
 }
 function fillGrid(game, word = void 0) {
   let tmp = __spreadValues({}, game);
-  if (typeof word === "undefined") {
+  if (typeof tmp.grid === "undefined") {
     tmp.grid = new Array(6).fill(void 0);
   } else {
-    tmp.grid[tmp.round] = Array.from(word);
+    if (typeof word !== "undefined") {
+      tmp.grid[tmp.round - 1] = Array.from(word);
+    }
   }
   return Object.freeze(tmp);
 }
